@@ -1,10 +1,11 @@
 package com.heshmat.reqresapidemo.ui.view
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.heshmat.reqresapidemo.R
@@ -12,27 +13,48 @@ import com.heshmat.reqresapidemo.model.User
 import com.heshmat.reqresapidemo.presenter.UserPresenter
 import com.heshmat.reqresapidemo.ui.adapter.ItemClickListener
 import com.heshmat.reqresapidemo.ui.adapter.UsersAdapter
+import com.heshmat.reqresapidemo.utils.InternetUtil
 import kotlinx.android.synthetic.main.activity_main.*
 import java.net.UnknownHostException
 
-class MainActivity : AppCompatActivity(),UserView, ItemClickListener {
+class MainActivity : AppCompatActivity(), UserView, ItemClickListener {
 
     lateinit var userPresenter: UserPresenter
-    private  val MAX_PAGE_NUM = 2
+    private val MAX_PAGE_NUM = 2
     private lateinit var adapter: UsersAdapter
-    private var pageNum: Int = 1
+    private var pageNum: Int = 0
     private var isLoading: Boolean = false
+    private var isInternetConnected = false;
     private lateinit var llm: LinearLayoutManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        userPresenter= UserPresenter(this)
+        userPresenter = UserPresenter(this)
         adapter = UsersAdapter(arrayListOf(), this)
         userRv.adapter = adapter
         llm = LinearLayoutManager(this)
         userRv.layoutManager = llm
-        userPresenter.getUsers(pageNum)
-        addScrollListenToRv()
+        InternetUtil.init(this)
+        InternetUtil.observe(this, Observer { status ->
+            if (status) {
+                noInternetTv.visibility = View.GONE
+
+                isInternetConnected = true
+                if (pageNum == 0) {
+                    pageNum++
+                    userPresenter.getUsers(pageNum)
+                    addScrollListenToRv()
+
+                }
+
+            } else {
+                noInternetTv.visibility = View.VISIBLE
+                isInternetConnected = false
+            }
+
+
+        })
+
 
     }
 
@@ -55,19 +77,16 @@ class MainActivity : AppCompatActivity(),UserView, ItemClickListener {
         progressBar.visibility = View.GONE
         showErrorMSG(t)
     }
+
     private fun showErrorMSG(t: Throwable) {
-        if (t is UnknownHostException)
-            Toast.makeText(this, getString(R.string.no_internet), Toast.LENGTH_SHORT).show()
-        else
-            Toast.makeText(this, t.message, Toast.LENGTH_SHORT).show()
-
-
+        Toast.makeText(this, t.message, Toast.LENGTH_SHORT).show()
     }
+
     private fun addScrollListenToRv() {
         userRv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                if (!isLoading && pageNum != MAX_PAGE_NUM) {
+                if (!isLoading && pageNum != MAX_PAGE_NUM && isInternetConnected) {
                     if (llm.findLastCompletelyVisibleItemPosition() == adapter.itemCount - 1) {
                         pageNum++
                         userPresenter.getUsers(pageNum)
@@ -82,10 +101,12 @@ class MainActivity : AppCompatActivity(),UserView, ItemClickListener {
             }
         })
     }
+
     override fun onItemClickListener(item: User) {
         val intent = Intent(this, FullScreenAvatarActivity::class.java).apply {
             putExtra("IMG_URL", item.avatar)
         }
 
-        startActivity(intent)    }
+        startActivity(intent)
+    }
 }
