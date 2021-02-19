@@ -1,0 +1,2 @@
+rootProject.name='Reqres Api demo'
+include ':app'
