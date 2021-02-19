@@ -1,5 +1,6 @@
 package com.heshmat.reqresapidemo.ui.view
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
@@ -82,6 +83,9 @@ class MainActivity : AppCompatActivity(),UserView, ItemClickListener {
         })
     }
     override fun onItemClickListener(item: User) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+        val intent = Intent(this, FullScreenAvatarActivity::class.java).apply {
+            putExtra("IMG_URL", item.avatar)
+        }
+
+        startActivity(intent)    }
 }
