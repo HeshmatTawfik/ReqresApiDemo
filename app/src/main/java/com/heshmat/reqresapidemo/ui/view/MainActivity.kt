@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.heshmat.reqresapidemo.R
 import com.heshmat.reqresapidemo.model.User
 import com.heshmat.reqresapidemo.presenter.UserPresenter
@@ -30,6 +31,7 @@ class MainActivity : AppCompatActivity(),UserView, ItemClickListener {
         llm = LinearLayoutManager(this)
         userRv.layoutManager = llm
         userPresenter.getUsers(pageNum)
+        addScrollListenToRv()
 
     }
 
@@ -60,7 +62,25 @@ class MainActivity : AppCompatActivity(),UserView, ItemClickListener {
 
 
     }
+    private fun addScrollListenToRv() {
+        userRv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                if (!isLoading && pageNum != MAX_PAGE_NUM) {
+                    if (llm.findLastCompletelyVisibleItemPosition() == adapter.itemCount - 1) {
+                        pageNum++
+                        userPresenter.getUsers(pageNum)
+                        isLoading = true
 
+                    }
+                }
+                // check if the last page is reached and the last user in the list was shown
+                else if (pageNum == MAX_PAGE_NUM && llm.findLastCompletelyVisibleItemPosition() == adapter.itemCount - 1) {
+                    Toast.makeText(this@MainActivity, "No more result", Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
+    }
     override fun onItemClickListener(item: User) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
